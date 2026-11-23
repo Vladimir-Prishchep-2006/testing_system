@@ -1,12 +1,26 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from . import models  # noqa: F401  (регистрирует таблицы в Base.metadata)
+from .database import Base, SessionLocal, engine
+from .seed import seed
+
 BASE_DIR = Path(__file__).parent
 
-app = FastAPI(title="Система онлайн-тестирования и оценки результатов")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(engine)  # создаёт таблицы, если их ещё нет
+    with SessionLocal() as db:
+        seed(db)
+    yield
+
+
+app = FastAPI(title="Система онлайн-тестирования и оценки результатов", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
