@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 
 from . import models  # noqa: F401  (регистрирует таблицы в Base.metadata)
 from .database import Base, SessionLocal, engine
+from .routers import catalog
 from .seed import seed
 
 BASE_DIR = Path(__file__).parent
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Система онлайн-тестирования и оценки результатов", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
+app.include_router(catalog.router)
 
 
 @app.get("/api/health")
