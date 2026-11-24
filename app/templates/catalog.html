@@ -1,6 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Каталог тестов</h1>
+
+<form id="filters" class="filters">
+  <input name="search" placeholder="Название теста">
+  <select name="category_id"><option value="">Все предметы</option></select>
+  <select name="difficulty">
+    <option value="">Любая сложность</option>
+    <option value="easy">Лёгкий</option>
+    <option value="medium">Средний</option>
+    <option value="hard">Сложный</option>
+  </select>
+  <input name="min_price" type="number" min="0" placeholder="Цена от, ₸">
+  <input name="max_price" type="number" min="0" placeholder="Цена до, ₸">
+  <select name="sort">
+    <option value="id">По умолчанию</option>
+    <option value="price_asc">Сначала дешёвые</option>
+    <option value="price_desc">Сначала дорогие</option>
+    <option value="title">По названию</option>
+  </select>
+  <button>Найти</button>
+</form>
+
 <div id="list"></div>
 <div id="pager" class="pager"></div>
 {% endblock %}
@@ -10,11 +31,20 @@
 const LEVEL = { easy: "лёгкий", medium: "средний", hard: "сложный" };
 let page = 1;
 
+async function loadCategories() {
+  const categories = await api("/categories");
+  const select = document.querySelector("[name=category_id]");
+  categories.forEach((c) => select.add(new Option(c.name, c.id)));
+}
+
 async function load() {
+  // собираем параметры запроса из формы, пустые поля пропускаем
+  const params = new URLSearchParams({ page, size: 3 });   // size=3 временно: тестов пока мало
+  new FormData(document.getElementById("filters")).forEach((value, key) => {
+    if (value) params.set(key, value);
+  });
   let data;
-  try {
-    data = await api("/tests?page=" + page + "&size=3");   // size=3 временно: тестов пока мало
-  } catch (e) { return notify(e.message); }
+  try { data = await api("/tests?" + params); } catch (e) { return notify(e.message); }
 
   document.getElementById("list").innerHTML = data.items.map((t) => `
     <div class="row">
@@ -35,6 +65,12 @@ async function load() {
 
 function go(p) { page = p; load(); }
 
-load();
+document.getElementById("filters").addEventListener("submit", (e) => {
+  e.preventDefault();
+  page = 1;
+  load();
+});
+
+loadCategories().then(load);
 </script>
 {% endblock %}

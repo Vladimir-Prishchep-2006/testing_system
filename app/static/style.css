@@ -29,3 +29,6 @@ button:disabled { opacity: .5; cursor: default; }
 #msg.show { display: block; }
 #msg.err { background: var(--bad); }
 #msg.ok { background: var(--good); }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.filters input[type=number] { width: 120px; }
