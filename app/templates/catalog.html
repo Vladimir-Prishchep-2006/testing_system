@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Каталог тестов</h1>
+<div id="list"></div>
+<div id="pager" class="pager"></div>
+{% endblock %}
+
+{% block script %}
+<script>
+const LEVEL = { easy: "лёгкий", medium: "средний", hard: "сложный" };
+let page = 1;
+
+async function load() {
+  let data;
+  try {
+    data = await api("/tests?page=" + page + "&size=3");   // size=3 временно: тестов пока мало
+  } catch (e) { return notify(e.message); }
+
+  document.getElementById("list").innerHTML = data.items.map((t) => `
+    <div class="row">
+      <div>
+        <h3><a href="/tests/${t.id}">${esc(t.title)}</a></h3>
+        <p class="meta">${esc(t.category.name)}, ${LEVEL[t.difficulty]}, ${t.duration_minutes} мин</p>
+      </div>
+      <div class="side">
+        <span class="price">${money(t.price)}</span>
+      </div>
+    </div>`).join("") || "<p>Ничего не найдено</p>";
+
+  document.getElementById("pager").innerHTML = `
+    <button class="ghost" ${page <= 1 ? "disabled" : ""} onclick="go(${page - 1})">Назад</button>
+    <span>Страница ${data.page} из ${data.pages}, найдено: ${data.total}</span>
+    <button class="ghost" ${page >= data.pages ? "disabled" : ""} onclick="go(${page + 1})">Вперёд</button>`;
+}
+
+function go(p) { page = p; load(); }
+
+load();
+</script>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="info"></div>
+{% endblock %}
+
+{% block script %}
+<script>
+const testId = {{ test_id }};
+
+async function init() {
+  try {
+    const t = await api("/tests/" + testId);
+    document.title = t.title;
+    document.getElementById("info").innerHTML = `
+      <h1>${esc(t.title)}</h1>
+      <p>${esc(t.description)}</p>
+      <p class="meta">${esc(t.category.name)}. Время: ${t.duration_minutes} мин. Проходной балл: ${t.pass_score}%.</p>
+      <p class="total">Цена одной попытки: <span class="price">${money(t.price)}</span></p>`;
+  } catch (e) {
+    document.getElementById("info").innerHTML = `<h1>Тест не найден</h1><a href="/">К каталогу</a>`;
+  }
+}
+
+init();
+</script>
+{% endblock %}

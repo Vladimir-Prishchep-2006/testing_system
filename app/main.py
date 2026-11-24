@@ -33,5 +33,10 @@ def health():
 
 
 @app.get("/", include_in_schema=False)
-def page_home(request: Request):
-    return templates.TemplateResponse(request, "home.html")
+def page_catalog(request: Request):
+    return templates.TemplateResponse(request, "catalog.html")
+
+
+@app.get("/tests/{test_id}", include_in_schema=False)
+def page_test(request: Request, test_id: int):
+    return templates.TemplateResponse(request, "test.html", {"test_id": test_id})
