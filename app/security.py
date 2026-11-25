@@ -41,3 +41,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise error
     return user
+
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    if user.role != "admin":
+        raise HTTPException(403, "Требуется роль администратора")
+    return user
