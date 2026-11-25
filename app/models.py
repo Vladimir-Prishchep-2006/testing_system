@@ -34,3 +34,29 @@ class Test(Base):
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
 
     category: Mapped[Category] = relationship(back_populates="tests")
+    questions: Mapped[list["Question"]] = relationship(back_populates="test", cascade="all, delete-orphan")
+
+    @property
+    def questions_count(self) -> int:
+        return len(self.questions)
+
+class Question(Base):
+    __tablename__ = "questions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    test_id: Mapped[int] = mapped_column(ForeignKey("tests.id"))
+    text: Mapped[str] = mapped_column(String(1000))
+
+    test: Mapped[Test] = relationship(back_populates="questions")
+    options: Mapped[list["Option"]] = relationship(back_populates="question", cascade="all, delete-orphan")
+
+
+class Option(Base):
+    __tablename__ = "options"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"))
+    text: Mapped[str] = mapped_column(String(300))
+    is_correct: Mapped[bool] = mapped_column(default=False)
+
+    question: Mapped[Question] = relationship(back_populates="options")
