@@ -39,7 +39,7 @@ async function loadCategories() {
 
 async function load() {
   // собираем параметры запроса из формы, пустые поля пропускаем
-  const params = new URLSearchParams({ page, size: 3 });   // size=3 временно: тестов пока мало
+  const params = new URLSearchParams({ page, size: 8 });
   new FormData(document.getElementById("filters")).forEach((value, key) => {
     if (value) params.set(key, value);
   });
@@ -50,7 +50,7 @@ async function load() {
     <div class="row">
       <div>
         <h3><a href="/tests/${t.id}">${esc(t.title)}</a></h3>
-        <p class="meta">${esc(t.category.name)}, ${LEVEL[t.difficulty]}, ${t.duration_minutes} мин</p>
+        <p class="meta">${esc(t.category.name)}, ${LEVEL[t.difficulty]}, ${t.duration_minutes} мин, вопросов: ${t.questions_count}</p>
       </div>
       <div class="side">
         <span class="price">${money(t.price)}</span>

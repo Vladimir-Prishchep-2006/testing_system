@@ -14,7 +14,7 @@ async function init() {
     document.getElementById("info").innerHTML = `
       <h1>${esc(t.title)}</h1>
       <p>${esc(t.description)}</p>
-      <p class="meta">${esc(t.category.name)}. Время: ${t.duration_minutes} мин. Проходной балл: ${t.pass_score}%.</p>
+      <p class="meta">${esc(t.category.name)}. Время: ${t.duration_minutes} мин. Вопросов: ${t.questions_count}. Проходной балл: ${t.pass_score}%.</p>
       <p class="total">Цена одной попытки: <span class="price">${money(t.price)}</span></p>`;
   } catch (e) {
     document.getElementById("info").innerHTML = `<h1>Тест не найден</h1><a href="/">К каталогу</a>`;
