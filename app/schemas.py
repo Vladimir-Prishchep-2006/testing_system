@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Difficulty = Literal["easy", "medium", "hard"]
 
@@ -50,6 +50,7 @@ class TestRead(TestCreate):
     model_config = ConfigDict(from_attributes=True)
     id: int
     category: CategoryRead
+    questions_count: int
 
 
 class TestPage(BaseModel):
@@ -57,3 +58,31 @@ class TestPage(BaseModel):
     total: int
     page: int
     pages: int
+
+# ---------- вопросы ----------
+class OptionCreate(BaseModel):
+    text: str = Field(min_length=1, max_length=300)
+    is_correct: bool = False
+
+
+class QuestionCreate(BaseModel):
+    text: str = Field(min_length=3, max_length=1000)
+    options: list[OptionCreate] = Field(min_length=2, max_length=8)
+
+    @model_validator(mode="after")
+    def at_least_one_correct(self):
+        if not any(o.is_correct for o in self.options):
+            raise ValueError("Нужен хотя бы один правильный вариант ответа")
+        return self
+
+
+class OptionAdmin(ORM):  # видит администратор: с признаком правильности
+    id: int
+    text: str
+    is_correct: bool
+
+
+class QuestionAdmin(ORM):
+    id: int
+    text: str
+    options: list[OptionAdmin]

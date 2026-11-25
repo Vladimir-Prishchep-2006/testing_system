@@ -5,8 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Category, Test
-from ..schemas import CategoryCreate, CategoryRead, Difficulty, TestCreate, TestPage, TestRead
+from ..models import Category, Option, Question, Test
+from ..schemas import (CategoryCreate, CategoryRead, Difficulty, QuestionAdmin,
+                       QuestionCreate, TestCreate, TestPage, TestRead)
 from ..security import require_admin
 from ..utils import get_or_404
 
@@ -114,4 +115,24 @@ def update_test(test_id: int, data: TestCreate, db: Session = Depends(get_db)):
 @router.delete("/tests/{test_id}", status_code=204, dependencies=admin_only)
 def delete_test(test_id: int, db: Session = Depends(get_db)):
     db.delete(get_or_404(db, Test, test_id))
+    db.commit()
+# ---------- вопросы (только администратор) ----------
+@router.get("/tests/{test_id}/questions", response_model=list[QuestionAdmin], dependencies=admin_only)
+def list_questions(test_id: int, db: Session = Depends(get_db)):
+    return get_or_404(db, Test, test_id).questions
+
+
+@router.post("/tests/{test_id}/questions", response_model=QuestionAdmin, status_code=201, dependencies=admin_only)
+def add_question(test_id: int, data: QuestionCreate, db: Session = Depends(get_db)):
+    test = get_or_404(db, Test, test_id)
+    question = Question(text=data.text, options=[Option(**o.model_dump()) for o in data.options])
+    test.questions.append(question)
+    db.commit()
+    db.refresh(question)
+    return question
+
+
+@router.delete("/questions/{question_id}", status_code=204, dependencies=admin_only)
+def delete_question(question_id: int, db: Session = Depends(get_db)):
+    db.delete(get_or_404(db, Question, question_id))
     db.commit()
