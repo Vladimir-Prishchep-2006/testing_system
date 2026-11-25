@@ -32,3 +32,7 @@ button:disabled { opacity: .5; cursor: default; }
 
 .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .filters input[type=number] { width: 120px; }
+
+.auth { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 32px; }
+.auth form { display: grid; gap: 8px; align-content: start; }
+.auth h2 { margin: 0; }

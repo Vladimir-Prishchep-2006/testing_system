@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Вход{% endblock %}
+{% block content %}
+<div class="auth">
+  <form id="login">
+    <h2>Вход</h2>
+    <input name="username" placeholder="Логин" required autocomplete="username">
+    <input name="password" type="password" placeholder="Пароль" required autocomplete="current-password">
+    <button>Войти</button>
+  </form>
+  <form id="register">
+    <h2>Регистрация</h2>
+    <input name="username" placeholder="Логин (от 3 символов)" required autocomplete="username">
+    <input name="password" type="password" placeholder="Пароль (от 6 символов)" required autocomplete="new-password">
+    <button>Создать аккаунт</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+async function login(username, password) {
+  // эндпоинт входа принимает форму (стандарт OAuth2), а не JSON
+  const data = await api("/auth/login", { method: "POST", body: new URLSearchParams({ username, password }) });
+  localStorage.setItem("token", data.access_token);
+  location.href = "/";
+}
+
+document.getElementById("login").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  try { await login(f.get("username"), f.get("password")); } catch (err) { notify(err.message); }
+});
+
+document.getElementById("register").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  try {
+    await api("/auth/register", { method: "POST", json: Object.fromEntries(f) });
+    await login(f.get("username"), f.get("password"));
+  } catch (err) { notify(err.message); }
+});
+</script>
+{% endblock %}

@@ -41,3 +41,7 @@ def page_catalog(request: Request):
 @app.get("/tests/{test_id}", include_in_schema=False)
 def page_test(request: Request, test_id: int):
     return templates.TemplateResponse(request, "test.html", {"test_id": test_id})
+
+@app.get("/login", include_in_schema=False)
+def page_login(request: Request):
+    return templates.TemplateResponse(request, "auth.html")
