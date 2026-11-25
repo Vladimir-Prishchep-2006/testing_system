@@ -1,4 +1,5 @@
-from .models import Category, Test
+from .models import Category, Test, User
+from .security import hash_password
 
 # предмет -> [(название, сложность, минут, цена в тенге)]
 CATALOG = {
@@ -19,9 +20,13 @@ CATALOG = {
 
 
 def seed(db):
-    """Наполняет пустую базу категориями и тестами."""
-    if db.query(Category).first():
+    """Наполняет пустую базу: двух пользователей, категории и тесты."""
+    if db.query(User).first():
         return
+    db.add_all([
+        User(username="admin", hashed_password=hash_password("admin123"), role="admin"),
+        User(username="student", hashed_password=hash_password("student123")),
+    ])
     for category_name, tests in CATALOG.items():
         category = Category(name=category_name)
         for title, difficulty, minutes, price in tests:
