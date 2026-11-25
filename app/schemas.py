@@ -26,21 +26,29 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 # ---------- категории ----------
+class CategoryCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+
+
 class CategoryRead(ORM):
     id: int
     name: str
 
 
 # ---------- тесты (товары) ----------
-class TestRead(ORM):
-    id: int
-    title: str
-    description: str
-    difficulty: Difficulty
-    duration_minutes: int
-    pass_score: int
-    price: int
+class TestCreate(BaseModel):
+    title: str = Field(min_length=3, max_length=200)
+    description: str = Field(default="", max_length=2000)
+    difficulty: Difficulty = "medium"
+    duration_minutes: int = Field(ge=1, le=300)
+    pass_score: int = Field(default=60, ge=1, le=100)
+    price: int = Field(default=0, ge=0, le=1_000_000, description="Цена одной попытки, тенге")
     category_id: int
+
+
+class TestRead(TestCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
     category: CategoryRead
 
 
