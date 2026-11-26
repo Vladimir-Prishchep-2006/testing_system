@@ -28,7 +28,8 @@ function render(cart) {
         </tr>`).join("")}
       </tbody>
     </table>
-    <p class="total">Итого: <strong>${money(cart.total)}</strong></p>`;
+    <p class="total">Итого: <strong>${money(cart.total)}</strong></p>
+    <button onclick="checkout()">Оформить заказ</button>`;
 }
 
 async function load() { render(await api("/cart")); }
@@ -43,6 +44,14 @@ async function removeItem(id) {
   try {
     render(await api("/cart/items/" + id, { method: "DELETE" }));
     renderNav();
+  } catch (e) { notify(e.message); }
+}
+
+async function checkout() {
+  try {
+    const order = await api("/orders", { method: "POST" });
+    notify("Заказ №" + order.id + " оформлен", true);
+    setTimeout(() => (location.href = "/profile"), 800);
   } catch (e) { notify(e.message); }
 }
 

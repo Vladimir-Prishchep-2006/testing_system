@@ -59,6 +59,6 @@ async function renderNav() {
   }
   const [me, cart] = await Promise.all([api("/auth/me"), api("/cart")]);
   box.innerHTML = `<a href="/cart">Корзина (${cart.count})</a>
-    <a href="#" onclick="logout()">Выйти (${esc(me.username)})</a>`;
+    <a href="/profile">Кабинет: ${esc(me.username)}</a><a href="#" onclick="logout()">Выйти</a>`;
 }
 renderNav();

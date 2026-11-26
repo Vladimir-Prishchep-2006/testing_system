@@ -49,3 +49,7 @@ def page_login(request: Request):
 @app.get("/cart", include_in_schema=False)
 def page_cart(request: Request):
     return templates.TemplateResponse(request, "cart.html")
+
+@app.get("/profile", include_in_schema=False)
+def page_profile(request: Request):
+    return templates.TemplateResponse(request, "profile.html")
