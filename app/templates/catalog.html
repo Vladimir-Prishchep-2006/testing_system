@@ -54,6 +54,7 @@ async function load() {
       </div>
       <div class="side">
         <span class="price">${money(t.price)}</span>
+        <button class="ghost" onclick="addToCart(${t.id})">В корзину</button>
       </div>
     </div>`).join("") || "<p>Ничего не найдено</p>";
 
@@ -70,6 +71,14 @@ document.getElementById("filters").addEventListener("submit", (e) => {
   page = 1;
   load();
 });
+
+async function addToCart(id) {
+  try {
+    await api("/cart/items", { method: "POST", json: { test_id: id, quantity: 1 } });
+    notify("Тест добавлен в корзину", true);
+    renderNav();
+  } catch (e) { notify(e.message); }
+}
 
 loadCategories().then(load);
 </script>

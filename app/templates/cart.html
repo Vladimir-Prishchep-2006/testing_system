@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Корзина{% endblock %}
+{% block content %}
+<h1>Корзина</h1>
+<div id="cart"></div>
+{% endblock %}
+
+{% block script %}
+<script>
+if (!token()) location.href = "/login";
+
+function render(cart) {
+  const box = document.getElementById("cart");
+  if (!cart.items.length) {
+    box.innerHTML = '<p>Корзина пуста. <a href="/">Выберите тесты в каталоге.</a></p>';
+    return;
+  }
+  box.innerHTML = `
+    <table>
+      <thead><tr><th>Тест</th><th>Цена попытки</th><th>Попыток</th><th>Сумма</th><th></th></tr></thead>
+      <tbody>${cart.items.map((i) => `
+        <tr>
+          <td><a href="/tests/${i.test.id}">${esc(i.test.title)}</a></td>
+          <td>${money(i.test.price)}</td>
+          <td><input type="number" min="1" max="20" value="${i.quantity}" onchange="setQuantity(${i.test.id}, this.value)"></td>
+          <td>${money(i.subtotal)}</td>
+          <td><button class="ghost" onclick="removeItem(${i.test.id})">Удалить</button></td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+    <p class="total">Итого: <strong>${money(cart.total)}</strong></p>`;
+}
+
+async function load() { render(await api("/cart")); }
+
+async function setQuantity(id, value) {
+  try {
+    render(await api("/cart/items/" + id, { method: "PUT", json: { quantity: Number(value) } }));
+  } catch (e) { notify(e.message); load(); }
+}
+
+async function removeItem(id) {
+  try {
+    render(await api("/cart/items/" + id, { method: "DELETE" }));
+    renderNav();
+  } catch (e) { notify(e.message); }
+}
+
+load();
+</script>
+{% endblock %}

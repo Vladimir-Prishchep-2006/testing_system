@@ -36,3 +36,7 @@ button:disabled { opacity: .5; cursor: default; }
 .auth { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 32px; }
 .auth form { display: grid; gap: 8px; align-content: start; }
 .auth h2 { margin: 0; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); }
+td input[type=number] { width: 72px; }

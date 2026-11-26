@@ -46,3 +46,7 @@ def page_test(request: Request, test_id: int):
 @app.get("/login", include_in_schema=False)
 def page_login(request: Request):
     return templates.TemplateResponse(request, "auth.html")
+
+@app.get("/cart", include_in_schema=False)
+def page_cart(request: Request):
+    return templates.TemplateResponse(request, "cart.html")
