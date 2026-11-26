@@ -89,6 +89,18 @@ class QuestionAdmin(ORM):
     options: list[OptionAdmin]
 
 
+class OptionPublic(ORM):  # видит студент: без признака правильности
+    id: int
+    text: str
+
+
+class QuestionPublic(ORM):
+    id: int
+    text: str
+    multiple: bool
+    options: list[OptionPublic]
+
+
 
 # ---------- корзина ----------
 class CartAdd(BaseModel):
@@ -133,3 +145,31 @@ class OrderRead(ORM):
 class BalanceRead(ORM):
     test: TestRead
     attempts_left: int
+
+# ---------- попытки ----------
+class AttemptStart(BaseModel):
+    attempt_id: int
+    deadline: datetime
+    questions: list[QuestionPublic]
+
+
+class AnswerIn(BaseModel):
+    question_id: int
+    option_ids: list[int] = []
+
+
+class SubmitIn(BaseModel):
+    answers: list[AnswerIn]
+
+
+class AttemptRead(ORM):
+    id: int
+    test_id: int
+    test_title: str
+    started_at: datetime
+    finished_at: datetime | None
+    correct_count: int | None
+    total: int | None
+    percent: float | None
+    grade: int | None
+    passed: bool | None
