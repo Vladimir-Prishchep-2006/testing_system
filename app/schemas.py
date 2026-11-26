@@ -173,3 +173,15 @@ class AttemptRead(ORM):
     percent: float | None
     grade: int | None
     passed: bool | None
+
+class QuestionStat(BaseModel):
+    question_id: int
+    text: str
+    correct_rate: float
+
+
+class TestStats(BaseModel):
+    attempts: int
+    avg_percent: float
+    pass_rate: float
+    questions: list[QuestionStat]

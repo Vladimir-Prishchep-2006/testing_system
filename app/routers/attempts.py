@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..grading import grade_from_percent, is_question_correct
 from ..models import Attempt, AttemptAnswer, AttemptBalance, Test, User, utcnow
-from ..schemas import AttemptRead, AttemptStart, BalanceRead, SubmitIn
-from ..security import get_current_user
+from ..schemas import AttemptRead, AttemptStart, BalanceRead, SubmitIn, TestStats
+from ..security import get_current_user, require_admin
 from ..utils import get_or_404
 
 router = APIRouter(prefix="/api", tags=["attempts"])
@@ -85,3 +85,22 @@ def my_tests(user: User = Depends(get_current_user), db: Session = Depends(get_d
 @router.get("/attempts/me", response_model=list[AttemptRead])
 def my_attempts(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.query(Attempt).filter(Attempt.user_id == user.id).order_by(Attempt.id.desc()).all()
+
+
+@router.get("/tests/{test_id}/stats", response_model=TestStats, dependencies=[Depends(require_admin)])
+def test_stats(test_id: int, db: Session = Depends(get_db)):
+    test = get_or_404(db, Test, test_id)
+    done = [a for a in test.attempts if a.percent is not None]
+
+    questions = []
+    for q in test.questions:
+        rows = db.query(AttemptAnswer).filter(AttemptAnswer.question_id == q.id).all()
+        rate = round(sum(r.is_correct for r in rows) / len(rows) * 100, 1) if rows else 0.0
+        questions.append({"question_id": q.id, "text": q.text, "correct_rate": rate})
+
+    return {
+        "attempts": len(done),
+        "avg_percent": round(sum(a.percent for a in done) / len(done), 1) if done else 0.0,
+        "pass_rate": round(sum(a.passed for a in done) / len(done) * 100, 1) if done else 0.0,
+        "questions": questions,
+    }
