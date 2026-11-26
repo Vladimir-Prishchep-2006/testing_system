@@ -1,25 +1,44 @@
 {% extends "base.html" %}
 {% block content %}
 <div id="info"></div>
+<div id="timer" class="timer" hidden></div>
+<form id="quiz" hidden></form>
+<div id="result"></div>
 {% endblock %}
 
 {% block script %}
 <script>
 const testId = {{ test_id }};
+let attempt = null;   // данные текущей попытки (null, пока тест не начат или уже отправлен)
+let timerId = null;
 
 async function init() {
-  try {
-    const t = await api("/tests/" + testId);
-    document.title = t.title;
-    document.getElementById("info").innerHTML = `
-      <h1>${esc(t.title)}</h1>
-      <p>${esc(t.description)}</p>
-      <p class="meta">${esc(t.category.name)}. Время: ${t.duration_minutes} мин. Вопросов: ${t.questions_count}. Проходной балл: ${t.pass_score}%.</p>
-      <p class="total">Цена одной попытки: <span class="price">${money(t.price)}</span></p>
-      <p><button class="ghost" onclick="addToCart()">В корзину</button></p>`;
-  } catch (e) {
+  let t;
+  try { t = await api("/tests/" + testId); }
+  catch (e) {
     document.getElementById("info").innerHTML = `<h1>Тест не найден</h1><a href="/">К каталогу</a>`;
+    return;
   }
+  document.title = t.title;
+
+  // сколько попыток уже куплено (только для вошедшего пользователя)
+  let left = 0;
+  if (token()) {
+    const mine = await api("/my-tests");
+    left = (mine.find((m) => m.test.id === t.id) || {}).attempts_left || 0;
+  }
+
+  document.getElementById("info").innerHTML = `
+    <h1>${esc(t.title)}</h1>
+    <p>${esc(t.description)}</p>
+    <p class="meta">${esc(t.category.name)}. Время: ${t.duration_minutes} мин. Вопросов: ${t.questions_count}.
+      Проходной балл: ${t.pass_score}%.</p>
+    <p class="total">Цена одной попытки: <span class="price">${money(t.price)}</span></p>
+    <p>
+      <button class="ghost" onclick="addToCart()">В корзину</button>
+      ${left > 0 ? `<button onclick="start()">Начать тест (попыток: ${left})</button>` : ""}
+    </p>
+    ${left > 0 ? "" : '<p class="meta">Чтобы пройти тест, купите хотя бы одну попытку.</p>'}`;
 }
 
 async function addToCart() {
@@ -29,6 +48,62 @@ async function addToCart() {
     renderNav();
   } catch (e) { notify(e.message); }
 }
+
+async function start() {
+  try {
+    attempt = await api(`/tests/${testId}/start`, { method: "POST" });
+  } catch (e) { return notify(e.message); }
+
+  document.getElementById("info").hidden = true;
+  const quiz = document.getElementById("quiz");
+  quiz.innerHTML = attempt.questions.map((q, i) => `
+    <fieldset data-question="${q.id}">
+      <legend>${i + 1}. ${esc(q.text)}${q.multiple ? " (несколько ответов)" : ""}</legend>
+      ${q.options.map((o) => `
+        <label><input type="${q.multiple ? "checkbox" : "radio"}" name="q${q.id}" value="${o.id}"> ${esc(o.text)}</label>`).join("")}
+    </fieldset>`).join("") + '<button type="submit">Завершить тест</button>';
+  quiz.hidden = false;
+
+  // сервер отдаёт время UTC без часового пояса, поэтому добавляем "Z"
+  runTimer(new Date(attempt.deadline + "Z"));
+}
+
+function runTimer(deadline) {
+  const el = document.getElementById("timer");
+  el.hidden = false;
+  timerId = setInterval(() => {
+    const left = Math.max(0, Math.floor((deadline - Date.now()) / 1000));
+    el.textContent = `Осталось ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+    if (left === 0) submit();   // время вышло: отправляем то, что успели отметить
+  }, 500);
+}
+
+async function submit() {
+  if (!attempt) return;
+  clearInterval(timerId);
+  const answers = [...document.querySelectorAll("fieldset")].map((f) => ({
+    question_id: Number(f.dataset.question),
+    option_ids: [...f.querySelectorAll("input:checked")].map((i) => Number(i.value)),
+  }));
+  const id = attempt.attempt_id;
+  attempt = null;   // защита от повторной отправки
+  document.getElementById("quiz").hidden = true;
+  document.getElementById("timer").hidden = true;
+
+  const box = document.getElementById("result");
+  try {
+    const r = await api(`/attempts/${id}/submit`, { method: "POST", json: { answers } });
+    box.innerHTML = `
+      <h1>${r.passed ? "Тест сдан" : "Тест не сдан"}</h1>
+      <p>Правильных ответов: ${r.correct_count} из ${r.total} (${r.percent}%).</p>
+      <p>Оценка: <strong>${r.grade}</strong></p>
+      <p><a href="/">К каталогу</a>, <a href="/profile">личный кабинет</a></p>`;
+  } catch (e) {
+    box.innerHTML = `<h1>Попытка не принята</h1><p>${esc(e.message)}</p><a href="/">К каталогу</a>`;
+  }
+}
+
+document.getElementById("quiz").addEventListener("submit", (e) => { e.preventDefault(); submit(); });
 init();
 </script>
 {% endblock %}
