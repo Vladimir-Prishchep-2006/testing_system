@@ -86,3 +86,26 @@ class QuestionAdmin(ORM):
     id: int
     text: str
     options: list[OptionAdmin]
+
+
+
+# ---------- корзина ----------
+class CartAdd(BaseModel):
+    test_id: int
+    quantity: int = Field(default=1, ge=1, le=20)
+
+
+class CartUpdate(BaseModel):
+    quantity: int = Field(ge=1, le=20)
+
+
+class CartItemRead(BaseModel):
+    test: TestRead
+    quantity: int
+    subtotal: int
+
+
+class CartRead(BaseModel):
+    items: list[CartItemRead]
+    total: int
+    count: int  # число позиций
