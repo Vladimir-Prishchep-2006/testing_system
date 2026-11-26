@@ -11,6 +11,12 @@
   <thead><tr><th>№</th><th>Дата</th><th>Состав</th><th>Сумма</th><th>Статус</th></tr></thead>
   <tbody id="orders"></tbody>
 </table>
+
+<h2>История попыток</h2>
+<table>
+  <thead><tr><th>Тест</th><th>Начат</th><th>Результат</th><th>Оценка</th><th>Статус</th></tr></thead>
+  <tbody id="history"></tbody>
+</table>
 {% endblock %}
 
 {% block script %}
@@ -20,7 +26,7 @@ if (!token()) location.href = "/login";
 const when = (iso) => new Date(iso + "Z").toLocaleString("ru-RU");   // время с сервера в UTC
 
 async function load() {
-  const [mine, orders] = await Promise.all([api("/my-tests"), api("/orders/me")]);
+  const [mine, orders, history] = await Promise.all([api("/my-tests"), api("/orders/me"), api("/attempts/me")]);
 
   document.getElementById("mine").innerHTML = mine.map((m) => `
     <div class="row">
@@ -37,6 +43,16 @@ async function load() {
       <td>${money(o.total)}</td>
       <td>${o.status === "paid" ? "оплачен" : esc(o.status)}</td>
     </tr>`).join("") || '<tr><td colspan="5">Заказов пока нет</td></tr>';
+
+  document.getElementById("history").innerHTML = history.map((a) => {
+    const status = a.passed === null ? "не завершена" : a.passed ? "сдан" : "не сдан";
+    return `<tr>
+      <td>${esc(a.test_title)}</td>
+      <td>${when(a.started_at)}</td>
+      <td>${a.percent === null ? "—" : a.percent + "%"}</td>
+      <td>${a.grade ?? "—"}</td>
+      <td>${status}</td></tr>`;
+  }).join("") || '<tr><td colspan="5">Попыток пока нет</td></tr>';
 }
 
 load();
