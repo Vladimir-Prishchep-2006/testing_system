@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import JSON, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -42,6 +42,7 @@ class Test(Base):
 
     category: Mapped[Category] = relationship(back_populates="tests")
     questions: Mapped[list["Question"]] = relationship(back_populates="test", cascade="all, delete-orphan")
+    attempts: Mapped[list["Attempt"]] = relationship(back_populates="test", cascade="all, delete-orphan")
     cart_items: Mapped[list["CartItem"]] = relationship(back_populates="test", cascade="all, delete-orphan")
     balances: Mapped[list["AttemptBalance"]] = relationship(back_populates="test", cascade="all, delete-orphan")
 
@@ -58,6 +59,11 @@ class Question(Base):
 
     test: Mapped[Test] = relationship(back_populates="questions")
     options: Mapped[list["Option"]] = relationship(back_populates="question", cascade="all, delete-orphan")
+
+    @property
+    def multiple(self) -> bool:
+        """True, если верных ответов несколько (в интерфейсе тогда чекбоксы, а не радиокнопки)."""
+        return sum(o.is_correct for o in self.options) > 1
 
 
 class Option(Base):
@@ -123,3 +129,37 @@ class AttemptBalance(Base):
     attempts_left: Mapped[int] = mapped_column(default=0)
 
     test: Mapped[Test] = relationship(back_populates="balances")
+
+
+class Attempt(Base):
+    """Одна попытка прохождения теста."""
+    __tablename__ = "attempts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    test_id: Mapped[int] = mapped_column(ForeignKey("tests.id"))
+    started_at: Mapped[datetime] = mapped_column(default=utcnow)
+    finished_at: Mapped[datetime | None]
+    correct_count: Mapped[int | None]
+    total: Mapped[int | None]
+    percent: Mapped[float | None]
+    grade: Mapped[int | None]
+    passed: Mapped[bool | None]
+
+    test: Mapped[Test] = relationship(back_populates="attempts")
+    answers: Mapped[list["AttemptAnswer"]] = relationship(cascade="all, delete-orphan")
+
+    @property
+    def test_title(self) -> str:
+        return self.test.title
+
+
+class AttemptAnswer(Base):
+    """Ответ студента на один вопрос в рамках попытки."""
+    __tablename__ = "attempt_answers"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    attempt_id: Mapped[int] = mapped_column(ForeignKey("attempts.id"))
+    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"))
+    selected: Mapped[list[int]] = mapped_column(JSON)  # id выбранных вариантов
+    is_correct: Mapped[bool]
