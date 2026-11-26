@@ -1,7 +1,14 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
+
+
+def utcnow() -> datetime:
+    """Текущее время UTC без tzinfo (SQLite не хранит часовой пояс)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 class User(Base):
     __tablename__ = "users"
@@ -36,6 +43,7 @@ class Test(Base):
     category: Mapped[Category] = relationship(back_populates="tests")
     questions: Mapped[list["Question"]] = relationship(back_populates="test", cascade="all, delete-orphan")
     cart_items: Mapped[list["CartItem"]] = relationship(back_populates="test", cascade="all, delete-orphan")
+    balances: Mapped[list["AttemptBalance"]] = relationship(back_populates="test", cascade="all, delete-orphan")
 
     @property
     def questions_count(self) -> int:
@@ -75,3 +83,43 @@ class CartItem(Base):
     quantity: Mapped[int] = mapped_column(default=1)
 
     test: Mapped[Test] = relationship(back_populates="cart_items")
+
+
+
+class Order(Base):
+    """Оформленный заказ. Оплата имитируется: заказ сразу получает статус paid."""
+    __tablename__ = "orders"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    total: Mapped[int]
+    status: Mapped[str] = mapped_column(String(20), default="paid")
+
+    items: Mapped[list["OrderItem"]] = relationship(cascade="all, delete-orphan")
+
+
+class OrderItem(Base):
+    """Строка заказа. Название и цена копируются в момент покупки, поэтому
+    история заказов не меняется, если тест потом изменят или удалят."""
+    __tablename__ = "order_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"))
+    test_id: Mapped[int]  # намеренно без внешнего ключа
+    title: Mapped[str] = mapped_column(String(200))
+    price: Mapped[int]
+    quantity: Mapped[int]
+
+
+class AttemptBalance(Base):
+    """Сколько попыток по тесту осталось у пользователя. Пополняется при оформлении заказа."""
+    __tablename__ = "attempt_balances"
+    __table_args__ = (UniqueConstraint("user_id", "test_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    test_id: Mapped[int] = mapped_column(ForeignKey("tests.id"))
+    attempts_left: Mapped[int] = mapped_column(default=0)
+
+    test: Mapped[Test] = relationship(back_populates="balances")
