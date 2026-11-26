@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -109,3 +110,26 @@ class CartRead(BaseModel):
     items: list[CartItemRead]
     total: int
     count: int  # число позиций
+
+
+
+# ---------- заказы ----------
+class OrderItemRead(ORM):
+    test_id: int
+    title: str
+    price: int
+    quantity: int
+
+
+class OrderRead(ORM):
+    id: int
+    user_id: int
+    created_at: datetime
+    total: int
+    status: str
+    items: list[OrderItemRead]
+
+
+class BalanceRead(ORM):
+    test: TestRead
+    attempts_left: int
