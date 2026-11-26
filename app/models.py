@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -35,6 +35,7 @@ class Test(Base):
 
     category: Mapped[Category] = relationship(back_populates="tests")
     questions: Mapped[list["Question"]] = relationship(back_populates="test", cascade="all, delete-orphan")
+    cart_items: Mapped[list["CartItem"]] = relationship(back_populates="test", cascade="all, delete-orphan")
 
     @property
     def questions_count(self) -> int:
@@ -60,3 +61,17 @@ class Option(Base):
     is_correct: Mapped[bool] = mapped_column(default=False)
 
     question: Mapped[Question] = relationship(back_populates="options")
+
+
+
+class CartItem(Base):
+    """Позиция корзины: тест и количество попыток, которое пользователь хочет купить."""
+    __tablename__ = "cart_items"
+    __table_args__ = (UniqueConstraint("user_id", "test_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    test_id: Mapped[int] = mapped_column(ForeignKey("tests.id"))
+    quantity: Mapped[int] = mapped_column(default=1)
+
+    test: Mapped[Test] = relationship(back_populates="cart_items")
